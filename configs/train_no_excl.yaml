@@ -1,0 +1,45 @@
+# configs/train_no_excl.yaml
+defaults:
+  - data: default
+  - experiment: default
+  - model: default
+  - _self_
+
+data:
+  data_module:
+    datasets: [spice-dipeptide]
+    splitpath: null
+    ref_terms: []
+    train_loader_workers: 0
+    val_loader_workers: 0
+    test_loader_workers: 0
+    train_batch_size: 16
+    val_batch_size: 16
+    pin_memory: false
+  energy:
+    terms:
+      - bond
+      - angle
+      - proper
+      - improper
+    gradients: true
+    gradient_contributions: false
+
+experiment:
+  use_wandb: false
+  wandb:
+    name: grappa-coul-damp-test
+    project: grappa-experiment
+  train:
+    lr: 1.0e-4
+    start_qm_epochs: 0
+    param_loss_epochs: 0
+    param_weight: 0.0
+    energy_weight: 1.0
+    gradient_weight: 3.0
+    proper_regularisation: 1.0
+    improper_regularisation: 1.0
+  trainer:
+    max_epochs: 1000
+    min_epochs: 5
+    accelerator: gpu

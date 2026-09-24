@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grappa"
+version = "1.5.0"
+authors = [
+    { name="Leif Seute", email="leif.seute@h-its.org" }
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "pyyaml",
+    "pydantic",
+    "seaborn",
+    "tqdm",
+    "matplotlib",
+    "rdkit",
+    "wandb",
+    "networkx",
+    "charset-normalizer",
+    "hydra-core",
+    "torch",
+    "torchdata",
+    "dgl",
+    "torchdata",
+    "lightning",
+    "gmxtop",
+    "pytest",
+    "ase"
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where=["src"]
+
+[project.scripts]
+grappa_gmx = "grappa.wrappers.gromacs_wrapper:main"
+grappa_export = "grappa.training.export_model:grappa_export"
+grappa_inspect-dataset = "grappa.data.dataset:inspect_dataset"
+grappa_upload = "grappa.training.export_model:upload"
+
+[tool.pytest.ini_options]
+addopts = "-m 'not slow and not gpu' -vv -rA --tb=long --disable-warnings"
+markers = [
+    "slow: mark test as slow",
+    "gpu: mark test as requiring a CUDA installation of torch and dgl",
+    "dataset_builder: mark DatasetBuilder tutorial/GROMACS integration tests (skipped unless --run-dataset-builder or -m dataset_builder)",
+]
