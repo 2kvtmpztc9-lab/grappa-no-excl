@@ -21,3 +21,29 @@ We modified GraPPA in three key ways:
 2. **Direct QM training**: Instead of learning the difference `E_QM − E_MM`, we set `E_ref = E_QM` and train the model on the full QM energy and gradients. This is done via a small monkey-patch that overrides `Dataset.create_reference`.
 
 3. **Damping**: To avoid the LJ singularity without exclusions, we use a damping function:
+
+   
+## Files we changed in the original GraPPA
+
+If you want to apply our changes to your own GraPPA installation, here's the full list:
+
+| File | Change |
+|------|--------|
+| `src/grappa/models/nonbonded.py` | **NEW** — `WriteNonbondedParameters` class |
+| `src/grappa/models/interaction_parameters.py` | Added `nonbonded_hidden_feats` parameter and `nonbonded_writer` |
+| `src/grappa/models/grappa.py` | Added `nonbonded_hidden_feats` to `GrappaModel` |
+| `src/grappa/models/energy.py` | Added `_nonbonded_energy` method and its call in `forward` |
+| `src/grappa/training/loss.py` | Added regularization for `σ` and `ε` |
+| `src/grappa/utils/dgl_utils.py` | Fixed double-offset bug in `batch()` |
+| `src/grappa/data/dataset.py` | Handled `ref_terms=[]` in `create_reference` |
+
+We also use a **monkey-patch** (`experiment.py`) that overrides `Dataset.create_reference` so that `energy_ref = energy_qm` instead of `energy_qm − energy_nonbonded`. This avoids modifying the original GraPPA code more than necessary.
+
+## How to use
+
+### 1. Install the original GraPPA
+
+```bash
+git clone https://github.com/graeter-group/grappa.git
+cd grappa
+pip install -e .
