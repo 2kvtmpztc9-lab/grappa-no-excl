@@ -1,38 +1,38 @@
-# GraPPA без exclusions — рабочая модель
+# GraPPA without exclusions - a working model
 
-## Что это
+## What it is
 
-ML-FF на базе GraPPA, которая:
-- **сама предсказывает** `q, σ, ε` (nonbonded) для каждого атома,
-- обучается **напрямую на QM** (`E_ref = E_QM`, без Δ-learning),
-- считает nonbonded **по всем парам** с damping (без exclusions при обучении),
-- **MD стабильна** с PME + CustomNonbondedForce.
+An ML-FF based on GraPPA that:
+- **predicts** `q, σ, ε` (nonbonded) for each atom **itself**,
+- is trained **directly on QM** (`E_ref = E_QM`, without Δ-learning),
+- computes nonbonded interactions **over all pairs** with damping (no exclusions during training),
+- is **MD-stable** with PME + CustomNonbondedForce.
 
-## Модель
+## Model
 
-**Датасет:** `spice-dipeptide` (677 молекул, SPICE QM-уровень).
-**Эпох:** 309 (early stopping).
-**Чекпоинт:** `checkpoint.ckpt`.
+**Dataset:** `spice-dipeptide` (677 molecules, SPICE QM level).
+**Epochs:** 309 (early stopping).
+**Checkpoint:** `checkpoint.ckpt`.
 
-## Метрики на test set
+## Metrics on the test set
 
-- `rmse_energies = 2.676` ккал/моль (`ratio_E = 0.128` — модель объясняет **98.4%** разброса QM)
-- `rmse_gradients = 5.549` ккал/моль/Å (`ratio_G = 0.258`)
+- `rmse_energies = 2.676` kcal/mol (`ratio_E = 0.128` — the model explains **98.4%** of the QM variance)
+- `rmse_gradients = 5.549` kcal/mol/Å (`ratio_G = 0.258`)
 - n_confs = 2687
 
-## Параметры (средние)
+## Parameters (averages)
 
 - `q`: mean = 0.0006, std = 0.342
 - `σ`: mean = 2.675 Å, std = 0.673
-- `ε`: mean = 0.146 ккал/моль, std = 0.161
+- `ε`: mean = 0.146 kcal/mol, std = 0.161
 
-## MD (убиквитин, 1UBQ)
+## MD (ubiquitin, 1UBQ)
 
-- **Система:** `1ubq_system_pme.xml` — 1231 атом, PME для Coulomb + CustomNonbondedForce для LJ + damping, exceptions 1-2, 1-3.
-- **Минимизация:** -7450 ккал/моль.
-- **10 ps MD:** -8436 ккал/моль — **стабильно**.
+- **System:** `1ubq_system_pme.xml` — 1231 atoms, PME for Coulomb + CustomNonbondedForce for LJ + damping, exceptions 1-2, 1-3.
+- **Minimization:** -7450 kcal/mol.
+- **10 ps MD:** -8436 kcal/mol — **stable**.
 
-## Как использовать
+## How to use
 
 ```python
 from grappa.utils.model_loading_utils import model_from_path
