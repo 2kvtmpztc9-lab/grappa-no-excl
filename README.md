@@ -2,6 +2,43 @@
 
 > **Note:** This is **not** an official GraPPA release. It is a **community extension** built **on top of** the original [GraPPA](https://github.com/graeter-group/grappa) codebase by the Gräter Group. This repository contains only the **modified and added files** needed to reproduce our experiments. The original GraPPA code is **not** included here — you need to install it separately.
 
+## Why are there still exclusions in the MD system?
+
+This is a subtle point. The model is trained **without** exclusions —
+it sees the full QM energy, including the contribution of 1-2 and 1-3 pairs,
+which are damped but not zeroed out. The predicted `q, σ, ε` for these pairs
+contribute a small but non-zero amount to the total energy.
+
+For **MD**, we face a different problem: we need to compute **forces**, and
+forces require a different algorithm than the training-time energy evaluation.
+Specifically, we use **Particle Mesh Ewald (PME)** for the long-range Coulomb
+interaction, because without it the long-range electrostatics in a periodic
+system do not converge (we saw this directly: the system crashes within 5 ps).
+
+PME, however, cannot handle pairs at very short distances (1-2 Å),
+because the charge grid used by PME cannot resolve them. OpenMM therefore
+**requires** that any `NonbondedForce` with PME has explicit exceptions for
+such pairs. There is no way around this within OpenMM's standard forces.
+
+So we do the following:
+
+1. **Coulomb** via `NonbondedForce` with PME, **with exceptions for 1-2 and 1-3**.
+2. **LJ** via `CustomNonbondedForce` with damping, **with the same exceptions**.
+3. **For 1-4 and beyond**, our learned `q, σ, ε` are used directly
+   (no scaling, unlike AMBER's 0.5 factor).
+
+The **cost** of these exceptions is small: the damping function
+`f_damp(r) = 1/(1+exp(-α(r/r0−1)))` is already nearly zero for `r ≈ 1 Å`
+(`f_damp ≈ 1.6e-6`), so the 1-2 LJ contribution is negligible. For 1-3 pairs
+(`r ≈ 2 Å`), `f_damp ≈ 1.3e-3`, also small. The Coulomb contribution for 1-3
+is the largest term we drop, and it is the main reason we cannot remove these
+exceptions entirely without further research.
+
+We are actively working on **learned Coulomb damping** (`α_coul`, `r0_coul`)
+to address this. The idea is to make the damping itself per-atom, so that
+it can compensate for the missing Coulomb at short distances. So far this
+has not been stable during training (loss explodes), but it remains the
+most promising direction.
 ## Why we built this
 
 The original GraPPA is a Δ-learning framework: it predicts **bonded** parameters, while **nonbonded** interactions (`q`, `σ`, `ε`) and **exclusions** are taken from a classical force field (amber99, charmm36, openff, etc.). This works well for many applications, but it creates a systematic problem in **QM/MM** setups.
@@ -28,49 +65,6 @@ We modified GraPPA in three key ways:
 
    with `r0 = 0.3 nm` and `α = 20`. This smoothly suppresses the LJ and Coulomb contributions at short distances while leaving them unchanged for `r > 5 Å`.
 
-## What's in this repository
-
-```
-grappa_no_excl_package/
-├── src/grappa/                    # Modified GraPPA code (only changed files)
-│   ├── models/
-│   │   ├── nonbonded.py          # NEW: WriteNonbondedParameters head
-│   │   ├── interaction_parameters.py  # MODIFIED: wired up the head
-│   │   ├── grappa.py             # MODIFIED: added nonbonded_hidden_feats
-│   │   └── energy.py             # MODIFIED: added _nonbonded_energy
-│   ├── training/
-│   │   └── loss.py               # MODIFIED: added σ/ε regularization
-│   ├── utils/
-│   │   └── dgl_utils.py          # MODIFIED: fixed batch mutation bug
-│   └── data/
-│       └── dataset.py            # MODIFIED: handled ref_terms=[] edge case
-├── configs/
-│   ├── train_no_excl.yaml         # Main training config
-│   └── experiment.yaml            # Experiment hyperparameters
-├── experiments/
-│   ├── train_no_excl.py           # Training script (with monkey-patch import)
-│   └── evaluate_no_excl.py        # Evaluation script
-├── scripts/
-│   └── build_openmm_system_pme.py # Export to OpenMM with PME
-├── patches/                       # Diff patches for each modified file
-│   ├── interaction_parameters.py.patch
-│   ├── grappa.py.patch
-│   ├── energy.py.patch
-│   ├── loss.py.patch
-│   ├── dgl_utils.py.patch
-│   ├── dataset.py.patch
-│   └── nonbonded.py.new           # New file, copied in full
-├── experiment.py                  # Monkey-patch: energy_ref = energy_qm
-├── grappa-no-excl-spice/          # Trained model + MD files
-│   ├── checkpoint.ckpt            # Model weights (epoch 309, early_stopped)
-│   ├── config.yaml                # Training config
-│   ├── split.json                 # Train/val/test split
-│   ├── 1ubq_system_pme.xml        # OpenMM System (MD-ready)
-│   ├── 1ubq_with_H.pdb            # Ubiquitin with hydrogens
-│   ├── 1ubq_params.npz            # Predicted parameters
-│   └── README.md                  # Model-specific readme
-└── README.md                      # This file
-```
 
 ## Files we changed in the original GraPPA
 
