@@ -1,4 +1,4 @@
-# GraPPA without Exclusions — A Community Extension
+# GraPPA without Exclusions - A Community Extension
 
 > **Note:** This is **not** an official GraPPA release. It is a **community extension** built **on top of** the original [GraPPA](https://github.com/graeter-group/grappa) codebase by the Gräter Group. This repository contains only the **modified and added files** needed to reproduce our experiments. The original GraPPA code is **not** included here — you need to install it separately.
 
