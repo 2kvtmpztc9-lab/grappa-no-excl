@@ -1,44 +1,30 @@
 # GraPPA without Exclusions - A Community Extension
 
 > **Note:** This is **not** an official GraPPA release. It is a **community extension** built **on top of** the original [GraPPA](https://github.com/graeter-group/grappa) codebase by the Gräter Group. This repository contains only the **modified and added files** needed to reproduce our experiments. The original GraPPA code is **not** included here — you need to install it separately.
+## Introduction 
 
-## Why are there still exclusions in the MD system?
 
-This is a subtle point. The model is trained **without** exclusions —
-it sees the full QM energy, including the contribution of 1-2 and 1-3 pairs,
-which are damped but not zeroed out. The predicted `q, σ, ε` for these pairs
-contribute a small but non-zero amount to the total energy.
+Why are there still exclusions in the MD system?
+The model is trained without exclusions -  it sees the full QM energy, including the contribution of 1-2 and 1-3 pairs, which are damped but not zeroed out. The predicted `q, σ, ε` for these pairs contribute a small but non-zero amount to the total energy.
 
-For **MD**, we face a different problem: we need to compute **forces**, and
-forces require a different algorithm than the training-time energy evaluation.
-Specifically, we use **Particle Mesh Ewald (PME)** for the long-range Coulomb
-interaction, because without it the long-range electrostatics in a periodic
-system do not converge (we saw this directly: the system crashes within 5 ps).
+For MD, we face a different problem, we need to compute forces, and forces require a different algorithm than the training-time energy evaluation.
+Specifically, we use Particle Mesh Ewald (PME) for the long-range Coulomb interaction, because without it the long-range electrostatics in a periodic system do not converge (the system crashes within 5 ps...).
 
-PME, however, cannot handle pairs at very short distances (1-2 Å),
-because the charge grid used by PME cannot resolve them. OpenMM therefore
-**requires** that any `NonbondedForce` with PME has explicit exceptions for
-such pairs. There is no way around this within OpenMM's standard forces.
+PME, however, cannot handle pairs at very short distances (1-2 Å), because the charge grid used by PME cannot resolve them. OpenMM therefore
+requires that any `NonbondedForce` with PME has explicit exceptions for such pairs. There is no way around this within OpenMM's standard forces.
 
-So we do the following:
+So we do the next step:
 
-1. **Coulomb** via `NonbondedForce` with PME, **with exceptions for 1-2 and 1-3**.
-2. **LJ** via `CustomNonbondedForce` with damping, **with the same exceptions**.
-3. **For 1-4 and beyond**, our learned `q, σ, ε` are used directly
-   (no scaling, unlike AMBER's 0.5 factor).
+1. **Coulomb** via `NonbondedForce` with PME, with exceptions for 1-2 and 1-3. We understand that create ff with exceptions only 1-2 should work and think more. 
+2. **LJ** via `CustomNonbondedForce` with damping, with the same exceptions.
+3. **For 1-4 and beyond**, our learned `q, σ, ε` are used directly (no scaling, unlike AMBER's 0.5 factor).
 
-The **cost** of these exceptions is small: the damping function
+The cost of these exceptions is small: the damping function
 `f_damp(r) = 1/(1+exp(-α(r/r0−1)))` is already nearly zero for `r ≈ 1 Å`
 (`f_damp ≈ 1.6e-6`), so the 1-2 LJ contribution is negligible. For 1-3 pairs
-(`r ≈ 2 Å`), `f_damp ≈ 1.3e-3`, also small. The Coulomb contribution for 1-3
-is the largest term we drop, and it is the main reason we cannot remove these
-exceptions entirely without further research.
+(`r ≈ 2 Å`), `f_damp ≈ 1.3e-3`, also small. The Coulomb contribution for 1-3 is the largest term we drop, and it is the main reason we cannot remove these exceptions entirely without further research.
 
-We are actively working on **learned Coulomb damping** (`α_coul`, `r0_coul`)
-to address this. The idea is to make the damping itself per-atom, so that
-it can compensate for the missing Coulomb at short distances. So far this
-has not been stable during training (loss explodes), but it remains the
-most promising direction.
+We are actively working on **learned Coulomb damping** (`α_coul`, `r0_coul`) to address this. The idea is to make the damping itself per-atom, so that it can compensate for the missing Coulomb at short distances. So far this has not been stable during training (loss explodes), but it remains the most promising direction.
 ## Why we built this
 
 The original GraPPA is a Δ-learning framework: it predicts **bonded** parameters, while **nonbonded** interactions (`q`, `σ`, `ε`) and **exclusions** are taken from a classical force field (amber99, charmm36, openff, etc.). This works well for many applications, but it creates a systematic problem in **QM/MM** setups.
