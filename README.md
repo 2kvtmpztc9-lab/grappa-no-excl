@@ -69,41 +69,13 @@ We also use a monkey-patch (`experiment.py`) that overrides `Dataset.create_refe
 
 ## How to use
 
-### 1. Install the original GraPPA
-
 ```bash
-git clone https://github.com/graeter-group/grappa.git
-cd grappa
-pip install -e .
+git clone https://github.com/2kvtmpztc9-lab/grappa-no-excl
 ```
 
-### 2. Apply our changes
-
-Copy the files from `src/grappa/` in this repository into your GraPPA installation, **overwriting** the originals. Or, if you prefer, use `git apply` with the patches in `patches/`:
-
-```bash
-cd /path/to/grappa
-for patch in /path/to/grappa_no_excl_package/patches/*.patch; do
-    git apply "$patch"
-done
-cp /path/to/grappa_no_excl_package/patches/nonbonded.py.new \
-   src/grappa/models/nonbonded.py
-```
-
-### 3. Install the monkey-patch
-
-Copy `experiment.py` to a directory in your `PYTHONPATH`, e.g.:
-
-```bash
-cp experiment.py ~/my_project/
-```
-
-### 4. Run training or evaluation
-
-```bash
-cd ~/grappa
-PYTHONPATH=/path/to/this/repo python experiments/train_no_excl.py
-```
+```bash  
+python build_openmm_system_pme.py```
+You should rename *.pdb in build_openmm_system_pme for your goal. Also, you can see count energy. 
 
 ## Results
 
@@ -131,20 +103,6 @@ After energy minimization (`-7450` kcal/mol), 10 ps MD runs stably at `-8436` kc
 - `σ`: mean = 2.675 Å, std = 0.673
 - `ε`: mean = 0.146 kcal/mol, std = 0.161
 
-## Limitations and honest caveats
-
-- Exclusions for 1-2 and 1-3 are still present in the MD system. We could not remove them entirely because PME cannot handle such short distances, and Coulomb for 1-3 pairs without damping dominates the energy (34,000 kcal/mol for ubiquitin). This is a compromise: 1-4 and beyond use our learned `q, σ, ε` without scaling, while 1-2 and 1-3 are excluded as in AMBER.
-- Attempts to learn Coulomb damping per-atom (`α_coul`, `r0_coul`) failed, the loss explodes (`12,554` instead of `~20`), and the model gets stuck at the bounds of the damping parameters. We're still working on this.
-- The model was trained on peptides, not on general organic molecules. It works well on `spice-dipeptide` and `spice-pubchem`, but we have not validated it on proteins or nucleic acids.
-- This is a research prototype, not a production-ready force field.
-
-## What we're working on next
-
-- Learned Coulomb damping (per-atom `α_coul`, `r0_coul`) — currently unstable.
-- Soft-core LJ for a more stable MD without exclusions for 1-3.
-- Extensions to larger datasets (`spice-des-monomers`, `gen2`).
-- Comparison with baseline GraPPA-1.4.0 on the same test set.
-
 ## Acknowledgements
 
 This work builds directly on [GraPPA](https://github.com/graeter-group/grappa) by the Gräter Group. We thank them for releasing their code under a permissive license, which made this extension possible. This repository contains only our modifications — the original GraPPA code is not redistributed here.
@@ -158,11 +116,10 @@ Our modifications follow the same license as the original GraPPA. See the origin
 For questions about this extension, please open an issue in this repository. For questions about the original GraPPA, please refer to the [original repository](https://github.com/graeter-group/grappa).
 We also use a monkey-patch (`experiment.py`) that overrides `Dataset.create_reference` so that `energy_ref = energy_qm` instead of `energy_qm − energy_nonbonded`. This avoids modifying the original GraPPA code more than necessary.
 
-## How to use
 
 ### 1. Install the original GraPPA
 
 ```bash
 git clone https://github.com/graeter-group/grappa.git
 cd grappa
-pip install -e .
+pip install -e ```
