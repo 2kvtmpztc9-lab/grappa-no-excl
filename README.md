@@ -92,7 +92,7 @@ For comparison, the published GraPPA-1.4.0 (Δ-learning, with exclusions) reache
 ### MD stability
 
 We tested MD on ubiquitin (1UBQ, 1231 atoms). The system uses:
-- `NonbondedForce` with PME for Coulomb (with exceptions 1-2, 1-3),
+`NonbondedForce` with PME for Coulomb (with exceptions 1-2, 1-3), /n
 - `CustomNonbondedForce` with damping for LJ (with the same exceptions),
 - our bonded parameters from the model.
 
