@@ -115,7 +115,7 @@ Our modifications follow the same license as the original GraPPA. See the origin
 ## Contact
 
 For questions about this extension, please open an issue in this repository. For questions about the original GraPPA, please refer to the [original repository](https://github.com/graeter-group/grappa).
-We also use a monkey-patch (`experiment.py`) that overrides `Dataset.create_reference` so that `energy_ref = energy_qm` instead of `energy_qm − energy_nonbonded`. This avoids modifying the original GraPPA code more than necessary.
+We also use a monkey-patch (experiment.py) that overrides Dataset.create_reference so that energy_ref = energy_qm instead of energy_qm − energy_nonbonded. This avoids modifying the original GraPPA code more than necessary.
 
 
 ### 1. Install the original GraPPA
