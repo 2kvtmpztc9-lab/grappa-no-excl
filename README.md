@@ -74,7 +74,8 @@ git clone https://github.com/2kvtmpztc9-lab/grappa-no-excl
 ```
 
 ```bash  
-python build_openmm_system_pme.py```
+python build_openmm_system_pme.py
+```
 You should rename *.pdb in build_openmm_system_pme for your goal. Also, you can see count energy. 
 
 ## Results
